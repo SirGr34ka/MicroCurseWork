@@ -7,28 +7,28 @@
 
 unsigned char symbol_USART3      = 0;
 
-uint8_t       start_command_flag = 0; 
+uint8_t       start_command_flag = 0;
 unsigned char command            = 0;
 uint8_t       var_size           = 0;
 uint8_t       var_cnt            = 0;
 unsigned char var_in_char[ 3 ];
 uint8_t       end_command_flag   = 0;
 
-void USART3_IRQHandler(void);
 
-#define BAUD_RATE_USART3 55555
+void USART3_IRQHandler( void );
+
+#define BAUD_RATE_USART3 30000
 
 
 #define MAX_SENSORS 2
 
-uint8_t       devCount = 0;
-Sensor sensors[ MAX_SENSORS ];									// array of structures to store sensors data
-uint8_t resolution = RESOLUTION_12BIT;
+uint8_t       devCount    = 0;
+Sensor        sensors[ MAX_SENSORS ];				// array of structures to store sensors data
+uint8_t       resolution  = RESOLUTION_12BIT;
 
-unsigned char symbol = 0;
-uint8_t command_var = 0;
-uint8_t num_pow = 0;
-int8_t tempCheck = 0;
+uint8_t       command_var = 0;
+uint8_t       num_pow     = 0;
+int8_t        tempCheck   = 0;
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -70,8 +70,8 @@ void waitWhileRightCRC ( Sensor* sensor )
 	{
 		ds18b20_ReadStratchpad( 1 , sensor->scratchpad_data , sensor->ROM_code );
 		
-		sensor->crc8_data       = Compute_CRC8( sensor->scratchpad_data , 8 );																	// 	Compute CRC for data
-		sensor->crc8_data_error = Compute_CRC8( sensor->scratchpad_data , 9 ) == 0 ? 0 : 1;														// 	Get CRC Error Signal
+		sensor->crc8_data       = Compute_CRC8( sensor->scratchpad_data , 8 );                  // 	Compute CRC for data
+		sensor->crc8_data_error = Compute_CRC8( sensor->scratchpad_data , 9 ) == 0 ? 0 : 1;     // 	Get CRC Error Signal
 	}
 	while ( sensor->crc8_data_error );
 	
@@ -148,13 +148,7 @@ void writeTempLow ( uint8_t Tl )
 	return;
 }
 
-
 //--------------------------------------------------------------------------------------------------------------------------------
-
-int16_t double_to_int( double divider )
-{
-	return ( ( uint16_t )( ceil( divider ) ) << 4 ) | ( uint16_t )( round( ( divider - ceil( divider ) ) * 16 ) );
-}
 
 void SystemCoreClockConfigure( void )
 {
@@ -182,6 +176,11 @@ void SystemCoreClockConfigure( void )
 	while ( ( RCC->CFGR & RCC_CFGR_SWS ) != RCC_CFGR_SWS_PLL );
 }
 
+int16_t double_to_int( double divider )
+{
+	return ( ( uint16_t )( ceil( divider ) ) << 4 ) | ( uint16_t )( round( ( divider - ceil( divider ) ) * 16 ) );
+}
+
 void USART_Init ()
 {
 	// USART3
@@ -203,7 +202,6 @@ void USART_Init ()
 	USART3->BRR  = double_to_int( divider_USART3 );
 
 	USART3->CR1 |= USART_CR1_TE | USART_CR1_RE | USART_CR1_UE | USART_CR1_RXNEIE;
-//	USART3->CR1 |= USART_CR1_TE | USART_CR1_UE ;
 	
 	NVIC_EnableIRQ ( USART3_IRQn );
 	USART3->CR2 = 0;
@@ -212,8 +210,8 @@ void USART_Init ()
 
 void USART3_Send ( unsigned char symbol )
 {
-		while ( ( USART3->SR & USART_SR_TXE ) == 0 ) {}
-		USART3->DR = symbol;
+	while ( ( USART3->SR & USART_SR_TXE ) == 0 ) {}
+	USART3->DR = symbol;
 }
 
 void USART3_IRQHandler( void )
@@ -239,11 +237,6 @@ void USART3_IRQHandler( void )
 			case 'h' : var_size = 3; command = 'h'; break;
 			default  : var_size = 0; command = 0;
 		}
-	}
-	else if ( ( symbol_USART3 == ';' ) && ( command == 0 ) )
-	{
-		command  = 0;
-		var_size = 0;
 	}
 	else if ( ( symbol_USART3 == ';' ) && ( var_cnt > 0 ) )
 	{
@@ -275,6 +268,7 @@ int main () {
 	}
 	
 	unsigned char charTemp[ 10ul ];                            // 7 chars is max for RES_BIT12
+	unsigned char symbol = 0;
 	uint8_t ret = 0;
 
 	while ( 1 )
